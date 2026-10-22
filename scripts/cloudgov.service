@@ -1,0 +1,37 @@
+[Unit]
+Description=CloudGov FastAPI Backend Application (AWS Free Tier Optimized)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/cloudgov/backend
+
+# Python Virtual Environment
+Environment="PATH=/home/ubuntu/cloudgov/backend/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin"
+EnvironmentFile=-/home/ubuntu/cloudgov/backend/.env
+
+# Gunicorn running Uvicorn workers (2 workers optimal for t2.micro / t3.micro 1 vCPU / 1GB RAM)
+ExecStart=/home/ubuntu/cloudgov/backend/venv/bin/gunicorn app.main:app \
+    --workers 2 \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --bind 127.0.0.1:8000 \
+    --timeout 120 \
+    --keep-alive 5 \
+    --access-logfile /var/log/cloudgov_access.log \
+    --error-logfile /var/log/cloudgov_error.log
+
+# Reliability & Process Lifecycle
+Restart=always
+RestartSec=5s
+KillMode=mixed
+TimeoutStopSec=15
+
+# Logging configuration
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cloudgov-backend
+
+[Install]
+WantedBy=multi-user.target
